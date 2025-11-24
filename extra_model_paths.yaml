@@ -1,22 +1,20 @@
-#config for comfyui
-#your base path should be either an existing comfy install or a central folder where you store all of your models, loras, etc.
-
-comfyui:
-    base_path: /ComfyUI/
-    # You can use is_default to mark that these folders should be listed first, and used as the default dirs for eg downloads
-    is_default: true
+# extra_model_paths.yaml
+runpod_volume:
+    base_path: /runpod-volume/
+    
     checkpoints: models/checkpoints/
-    clip: models/clip/
-    clip_vision: models/clip_vision/
-    configs: models/configs/
-    controlnet: models/controlnet/
-    diffusion_models: |
-        models/diffusion_models
-        models/unet
-        /runpod-volume/models/
-    embeddings: models/embeddings/
-    loras: |
-        models/loras/
-        /runpod-volume/loras/
-    upscale_models: models/upscale_models/
     vae: models/vae/
+    loras: models/loras/
+    upscale_models: models/upscale_models/
+    embeddings: models/embeddings/
+    hypernetworks: models/hypernetworks/
+    controlnet: models/controlnet/
+    clip_vision: models/clip_vision/
+    clip: models/clip/
+    unet: models/unet/
+    diffusion_models: models/diffusion_models/
+    text_encoders: models/text_encoders/
+    gligen: models/gligen/
+    style_models: models/style_models/
+    photomaker: models/photomaker/
+    vae_approx: models/vae_approx/
