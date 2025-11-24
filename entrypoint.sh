@@ -1,32 +1,61 @@
 #!/bin/bash
 
-# Exit immediately if a command exits with a non-zero status.
 set -e
 
-# Start ComfyUI in the background
-echo "Starting ComfyUI in the background..."
-python /ComfyUI/main.py --listen --use-sage-attention &
+echo "================================================"
+echo "🚀 Iniciando ComfyUI Wan2.2 Serverless Worker"
+echo "================================================"
 
-# Wait for ComfyUI to be ready
-echo "Waiting for ComfyUI to be ready..."
-max_wait=120  # 최대 2분 대기
-wait_count=0
-while [ $wait_count -lt $max_wait ]; do
-    if curl -s http://127.0.0.1:8188/ > /dev/null 2>&1; then
-        echo "ComfyUI is ready!"
-        break
-    fi
-    echo "Waiting for ComfyUI... ($wait_count/$max_wait)"
-    sleep 2
-    wait_count=$((wait_count + 2))
-done
-
-if [ $wait_count -ge $max_wait ]; then
-    echo "Error: ComfyUI failed to start within $max_wait seconds"
+# Verificar Network Volume
+echo "🔍 Verificando Network Volume..."
+if [ ! -d "/runpod-volume/models" ]; then
+    echo "❌ ERROR: Network Volume no montado correctamente"
+    echo "Ruta esperada: /runpod-volume/models"
+    echo ""
+    echo "Solución:"
+    echo "1. Verifica que el Network Volume esté conectado al endpoint"
+    echo "2. Ejecuta setup_volume.sh en un pod temporal"
     exit 1
 fi
 
-# Start the handler in the foreground
-# 이 스크립트가 컨테이너의 메인 프로세스가 됩니다.
-echo "Starting the handler..."
-exec python handler.py
+# Verificar checkpoint v10-nsfw
+echo "🔍 Verificando checkpoint v10-nsfw..."
+CHECKPOINT="/runpod-volume/models/diffusion_models/wan2.2-i2v-rapid-aio-v10-nsfw.safetensors"
+if [ ! -f "$CHECKPOINT" ]; then
+    echo "❌ ERROR: Checkpoint no encontrado"
+    echo "Ubicación esperada: $CHECKPOINT"
+    echo ""
+    echo "Ejecuta: bash setup_volume.sh"
+    exit 1
+else
+    SIZE=$(du -h "$CHECKPOINT" | cut -f1)
+    echo "✅ Checkpoint encontrado: $SIZE"
+fi
+
+# Verificar modelos auxiliares
+echo "🔍 Verificando modelos auxiliares..."
+MODELS=(
+    "/runpod-volume/models/vae/Wan2_1_VAE_bf16.safetensors"
+    "/runpod-volume/models/clip_vision/clip_vision_h.safetensors"
+    "/runpod-volume/models/text_encoders/umt5-xxl-enc-bf16.safetensors"
+)
+
+for MODEL in "${MODELS[@]}"; do
+    if [ ! -f "$MODEL" ]; then
+        echo "⚠️  WARNING: $(basename $MODEL) no encontrado"
+    else
+        echo "✅ $(basename $MODEL) OK"
+    fi
+done
+
+echo ""
+echo "🎬 Iniciando ComfyUI..."
+cd /ComfyUI
+python main.py --listen 0.0.0.0 --port 8188 &
+
+# Esperar a que ComfyUI esté listo
+echo "⏳ Esperando a que ComfyUI inicie..."
+sleep 15
+
+echo "🤖 Iniciando RunPod handler..."
+python -u /handler.py
